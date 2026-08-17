@@ -1,0 +1,68 @@
+{
+  "name": "canonjson",
+  "version": "0.1.0",
+  "description": "RFC 8785 (JCS) canonical JSON serialization and stable hashing of any JS value. Zero dependencies, ~1 KB.",
+  "keywords": [
+    "json",
+    "canonical",
+    "canonicalize",
+    "jcs",
+    "rfc8785",
+    "stable",
+    "stringify",
+    "hash",
+    "deterministic",
+    "signing",
+    "cache-key"
+  ],
+  "license": "MIT",
+  "author": "Daniel Fry",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "import": "./dist/node.js",
+      "require": "./dist/node.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc",
+    "check": "pnpm typecheck && pnpm test && pnpm build",
+    "prepublishOnly": "pnpm check"
+  },
+  "devDependencies": {
+    "@types/node": "26.2.0",
+    "tsup": "8.5.1",
+    "typescript": "7.0.2",
+    "vitest": "4.1.10"
+  },
+  "packageManager": "pnpm@11.8.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/danfry1/canonjson.git"
+  },
+  "bin": {
+    "canonjson": "./bin/canonjson.js"
+  }
+}
