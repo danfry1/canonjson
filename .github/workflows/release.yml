@@ -61,7 +61,21 @@ jobs:
           npm pack --ignore-scripts --pack-destination /tmp
           bunx @arethetypeswrong/cli@0.18.5 /tmp/canonjson-*.tgz
 
+      # Bootstrapping a package means publishing its first version by hand, so a
+      # tag can point at a version that is already live. Skip rather than fail.
+      - name: Check whether this version is already published
+        id: published
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if npm view "canonjson@$version" version > /dev/null 2>&1; then
+            echo "canonjson@$version is already on the registry; skipping the publish."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Stage publish to npm
+        if: steps.published.outputs.skip == 'false' 
         # Uploads the tarball to npm's stage queue. Provenance is auto-generated
         # via OIDC trusted publishing. The version is NOT installable until a
         # maintainer approves it with a 2FA challenge:
@@ -69,6 +83,7 @@ jobs:
         run: npm stage publish
 
       - name: Staged-publish approval reminder
+        if: steps.published.outputs.skip == 'false'
         run: echo "::notice::Version staged to npm. Approve it (npm stage approve <id>, or on npmjs.com) with 2FA to make it installable."
 
       - name: Create GitHub Release
