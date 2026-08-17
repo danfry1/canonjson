@@ -43,4 +43,15 @@ jobs:
         run: |
           npx --yes publint@0.3.23 --strict
           npx --yes @arethetypeswrong/cli@0.18.5 --pack .
-      - run: npm publish --provenance --access public --tag next
+      - name: Skip if this version is already on the registry
+        id: published
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if npm view "canonjson@$version" version --json > /dev/null 2>&1; then
+            echo "canonjson@$version is already published; nothing to do."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.published.outputs.skip == 'false'
+        run: npm publish --provenance --access public --tag next
