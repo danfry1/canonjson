@@ -75,7 +75,7 @@ jobs:
           fi
 
       - name: Stage publish to npm
-        if: steps.published.outputs.skip == 'false' 
+        if: steps.published.outputs.skip == 'false'
         # Uploads the tarball to npm's stage queue. Provenance is auto-generated
         # via OIDC trusted publishing. The version is NOT installable until a
         # maintainer approves it with a 2FA challenge:
