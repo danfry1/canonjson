@@ -3,22 +3,38 @@
   "version": "0.1.0",
   "description": "RFC 8785 (JCS) canonical JSON serialization and stable hashing of any JS value. Zero dependencies, ~1 KB.",
   "keywords": [
-    "json",
+    "cache-key",
     "canonical",
     "canonicalize",
-    "jcs",
-    "rfc8785",
-    "stable",
-    "stringify",
-    "hash",
     "deterministic",
+    "hash",
+    "jcs",
+    "json",
+    "rfc8785",
     "signing",
-    "cache-key"
+    "stable",
+    "stringify"
   ],
   "license": "MIT",
   "author": "Daniel Fry",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/danfry1/canonjson.git"
+  },
+  "bin": {
+    "canonjson": "./bin/canonjson.js"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
   "type": "module",
   "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -31,26 +47,18 @@
       "require": "./dist/node.cjs"
     }
   },
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "files": [
-    "dist",
-    "bin",
-    "README.md",
-    "LICENSE"
-  ],
-  "engines": {
-    "node": ">=20"
-  },
   "scripts": {
     "build": "tsdown",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc",
     "bench": "bun run build && node bench/bench.mjs",
-    "check": "bun run typecheck && bun run test && bun run build",
-    "prepublishOnly": "bun run check"
+    "check": "bun run fmt:check && bun run lint && bun run typecheck && bun run test && bun run build",
+    "prepublishOnly": "bun run check",
+    "lint": "oxlint --type-aware",
+    "lint:fix": "oxlint --type-aware --fix",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check"
   },
   "devDependencies": {
     "@types/node": "26.2.0",
@@ -61,12 +69,8 @@
     "typescript": "7.0.2",
     "vitest": "4.1.10"
   },
-  "packageManager": "bun@1.3.14",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/danfry1/canonjson.git"
+  "engines": {
+    "node": ">=20"
   },
-  "bin": {
-    "canonjson": "./bin/canonjson.js"
-  }
+  "packageManager": "bun@1.3.14"
 }

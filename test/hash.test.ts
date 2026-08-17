@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { CanonJsonError, hash, quickHash } from "../src/index.js";
 import { hashSync } from "../src/node.js";
 
-// canonicalize(INPUT) === '{"a":null,"z":[1,2,{"k":"v"}]}'
+// Canonicalize(INPUT) === '{"a":null,"z":[1,2,{"k":"v"}]}'
 const INPUT = { z: [1, 2, { k: "v" }], a: null };
 
 // Reference digests of that canonical string (independently computed with `openssl dgst`).
@@ -10,13 +10,26 @@ const VECTORS = [
   { algorithm: "SHA-1", encoding: "hex", expected: "bfc020a8cacfe46d5ba0b4d74c720cade467fcf9" },
   { algorithm: "SHA-1", encoding: "base64", expected: "v8AgqMrP5G1boLTXTHIMreRn/Pk=" },
   { algorithm: "SHA-1", encoding: "base64url", expected: "v8AgqMrP5G1boLTXTHIMreRn_Pk" },
-  { algorithm: "SHA-256", encoding: "hex", expected: "ce67405388053aa59e06a8dc1b3a1232ad48ad22d002d448ec199112b586c2ac" },
-  { algorithm: "SHA-256", encoding: "base64", expected: "zmdAU4gFOqWeBqjcGzoSMq1IrSLQAtRI7BmRErWGwqw=" },
-  { algorithm: "SHA-256", encoding: "base64url", expected: "zmdAU4gFOqWeBqjcGzoSMq1IrSLQAtRI7BmRErWGwqw" },
+  {
+    algorithm: "SHA-256",
+    encoding: "hex",
+    expected: "ce67405388053aa59e06a8dc1b3a1232ad48ad22d002d448ec199112b586c2ac",
+  },
+  {
+    algorithm: "SHA-256",
+    encoding: "base64",
+    expected: "zmdAU4gFOqWeBqjcGzoSMq1IrSLQAtRI7BmRErWGwqw=",
+  },
+  {
+    algorithm: "SHA-256",
+    encoding: "base64url",
+    expected: "zmdAU4gFOqWeBqjcGzoSMq1IrSLQAtRI7BmRErWGwqw",
+  },
   {
     algorithm: "SHA-384",
     encoding: "hex",
-    expected: "e1fe445d1d67b9b205269635c15db9ad7a831c1df619aa69f8819a40933d0572db68637b6321f05ea4a4b8b48abc8d0c",
+    expected:
+      "e1fe445d1d67b9b205269635c15db9ad7a831c1df619aa69f8819a40933d0572db68637b6321f05ea4a4b8b48abc8d0c",
   },
   {
     algorithm: "SHA-384",
@@ -43,7 +56,8 @@ const VECTORS = [
   {
     algorithm: "SHA-512",
     encoding: "base64url",
-    expected: "U_UuDyTrxU35t8J1yeYvUpwud7YoGhnOxBD9blAa-YuFAai3B1qPLflnh6SngCORHwCmbVRUG7fK-F6xN5fBdw",
+    expected:
+      "U_UuDyTrxU35t8J1yeYvUpwud7YoGhnOxBD9blAa-YuFAai3B1qPLflnh6SngCORHwCmbVRUG7fK-F6xN5fBdw",
   },
 ] as const;
 
@@ -59,9 +73,12 @@ describe("hash", () => {
     await expect(hash({ b: [1, 2], a: 1 })).resolves.toBe(forward);
   });
 
-  it.each(VECTORS)("$algorithm / $encoding matches the reference digest", async ({ algorithm, encoding, expected }) => {
-    await expect(hash(INPUT, { algorithm, encoding })).resolves.toBe(expected);
-  });
+  it.each(VECTORS)(
+    "$algorithm / $encoding matches the reference digest",
+    async ({ algorithm, encoding, expected }) => {
+      await expect(hash(INPUT, { algorithm, encoding })).resolves.toBe(expected);
+    },
+  );
 
   it("forwards canonicalize options (bigint)", async () => {
     await expect(hash({ n: 1n })).rejects.toThrow(CanonJsonError);
@@ -74,7 +91,7 @@ describe("hash", () => {
     });
 
     it("throws webcrypto_unavailable", async () => {
-      vi.stubGlobal("crypto", undefined);
+      vi.stubGlobal("crypto", {});
       await expect(hash({ a: 1 })).rejects.toThrow(CanonJsonError);
       await expect(hash({ a: 1 })).rejects.toThrow(/WebCrypto \(crypto\.subtle\) is not available/);
     });
@@ -82,16 +99,21 @@ describe("hash", () => {
 });
 
 describe("hashSync (canonjson/node)", () => {
-  it.each(VECTORS)("$algorithm / $encoding matches the reference digest", ({ algorithm, encoding, expected }) => {
-    expect(hashSync(INPUT, { algorithm, encoding })).toBe(expected);
-  });
+  it.each(VECTORS)(
+    "$algorithm / $encoding matches the reference digest",
+    ({ algorithm, encoding, expected }) => {
+      expect(hashSync(INPUT, { algorithm, encoding })).toBe(expected);
+    },
+  );
 
   it("defaults to SHA-256 hex", () => {
-    expect(hashSync({ b: [true, null], a: 1 })).toBe("1cc69c7fa23616ca2ec3ee70d24390a6225c8832db8a4c814c7e0e7f942f8668");
+    expect(hashSync({ b: [true, null], a: 1 })).toBe(
+      "1cc69c7fa23616ca2ec3ee70d24390a6225c8832db8a4c814c7e0e7f942f8668",
+    );
   });
 
   it("throws the same CanonJsonError as canonicalize for bad input", () => {
-    expect(() => hashSync({ n: NaN })).toThrow(CanonJsonError);
+    expect(() => hashSync({ n: Number.NaN })).toThrow(CanonJsonError);
   });
 });
 
@@ -114,7 +136,9 @@ describe("quickHash", () => {
 
   it("has no collisions across 20 000 small distinct objects", () => {
     const seen = new Set<string>();
-    for (let i = 0; i < 20000; i++) seen.add(quickHash({ i, s: String(i) }));
-    expect(seen.size).toBe(20000);
+    for (let i = 0; i < 20_000; i++) {
+      seen.add(quickHash({ i, s: String(i) }));
+    }
+    expect(seen.size).toBe(20_000);
   });
 });

@@ -20,8 +20,8 @@ Options:
 type CliErrorCode = "usage" | "read_failed" | "invalid_json" | "canonicalize_failed";
 
 class CliError extends Error {
-  readonly code: CliErrorCode;
-  constructor(code: CliErrorCode, message: string, options?: { readonly cause?: unknown }) {
+  public readonly code: CliErrorCode;
+  public constructor(code: CliErrorCode, message: string, options?: { readonly cause?: unknown }) {
     super(message, options);
     this.name = new.target.name;
     Object.setPrototypeOf(this, new.target.prototype);
@@ -45,93 +45,145 @@ const HASH_ALIASES = {
   sha512: "SHA-512",
 } as const satisfies Record<string, HashAlgorithm>;
 
-function isKey<T extends Record<string, unknown>>(table: T, key: string): key is Extract<keyof T, string> {
-  return Object.prototype.hasOwnProperty.call(table, key);
+function isKey<T extends Record<string, unknown>>(
+  table: T,
+  key: string,
+): key is Extract<keyof T, string> {
+  return Object.hasOwn(table, key);
 }
 
-function oneOf<const T extends readonly string[]>(flag: string, value: string | undefined, allowed: T): T[number] {
+function oneOf<const T extends readonly string[]>(
+  flag: string,
+  value: string | undefined,
+  allowed: T,
+): T[number] {
   if (value === undefined || !allowed.includes(value)) {
     throw new CliError("usage", `${flag} must be one of: ${allowed.join(", ")}`);
   }
   return value;
 }
 
-export function parseArgs(argv: readonly string[]): Args {
-  let file: string | undefined;
-  let hash: Args["hash"];
-  let encoding: HashEncoding = "hex";
-  let bigint: BigintMode = "error";
-  let surrogates: SurrogateMode = "error";
-  let help = false;
+type MutableArgs = {
+  file: string | undefined;
+  hash: Args["hash"];
+  encoding: HashEncoding;
+  bigint: BigintMode;
+  surrogates: SurrogateMode;
+  help: boolean;
+};
 
-  for (let i = 0; i < argv.length; i++) {
-    const arg = argv[i];
-    if (arg === undefined) continue;
-    const next = argv[i + 1];
-    switch (arg) {
-      case "-h":
-      case "--help":
-        help = true;
-        break;
-      case "--hash": {
-        const value = next === undefined || next.startsWith("-") ? "sha256" : (i++, next);
-        if (value === "quick") hash = "quick";
-        else if (isKey(HASH_ALIASES, value)) hash = HASH_ALIASES[value];
-        else throw new CliError("usage", "--hash must be one of: sha1, sha256, sha384, sha512, quick");
-        break;
-      }
-      case "--encoding":
-        encoding = oneOf(arg, next, ["hex", "base64", "base64url"]);
-        i++;
-        break;
-      case "--bigint":
-        bigint = oneOf(arg, next, ["error", "number", "string"]);
-        i++;
-        break;
-      case "--surrogates":
-        surrogates = oneOf(arg, next, ["error", "escape"]);
-        i++;
-        break;
-      default:
-        if (arg.startsWith("-") && arg !== "-") throw new CliError("usage", `unknown option ${arg}`);
-        if (file !== undefined) throw new CliError("usage", "only one input file may be given");
-        file = arg;
+function parseHashValue(raw: string): Args["hash"] {
+  if (raw === "quick") {
+    return "quick";
+  }
+  if (isKey(HASH_ALIASES, raw)) {
+    return HASH_ALIASES[raw];
+  }
+  throw new CliError("usage", "--hash must be one of: sha1, sha256, sha384, sha512, quick");
+}
+
+function parsePositional(arg: string, state: MutableArgs): void {
+  if (arg.startsWith("-") && arg !== "-") {
+    throw new CliError("usage", `unknown option ${arg}`);
+  }
+  if (state.file !== undefined) {
+    throw new CliError("usage", "only one input file may be given");
+  }
+  state.file = arg;
+}
+
+/** Applies one argument to `state`; returns how many argv entries it consumed. */
+function applyArg(arg: string, next: string | undefined, state: MutableArgs): 1 | 2 {
+  switch (arg) {
+    case "-h":
+    case "--help": {
+      state.help = true;
+      return 1;
+    }
+    case "--hash": {
+      const omitted = next === undefined || next.startsWith("-");
+      state.hash = parseHashValue(omitted ? "sha256" : next);
+      return omitted ? 1 : 2;
+    }
+    case "--encoding": {
+      state.encoding = oneOf(arg, next, ["hex", "base64", "base64url"]);
+      return 2;
+    }
+    case "--bigint": {
+      state.bigint = oneOf(arg, next, ["error", "number", "string"]);
+      return 2;
+    }
+    case "--surrogates": {
+      state.surrogates = oneOf(arg, next, ["error", "escape"]);
+      return 2;
+    }
+    default: {
+      parsePositional(arg, state);
+      return 1;
     }
   }
-  return { file, hash, encoding, bigint, surrogates, help };
+}
+
+export function parseArgs(argv: readonly string[]): Args {
+  const state: MutableArgs = {
+    file: undefined,
+    hash: undefined,
+    encoding: "hex",
+    bigint: "error",
+    surrogates: "error",
+    help: false,
+  };
+
+  let index = 0;
+  while (index < argv.length) {
+    const arg = argv[index];
+    index += arg === undefined ? 1 : applyArg(arg, argv[index + 1], state);
+  }
+  return { ...state };
 }
 
 function readInput(file: string | undefined): string {
   try {
     return readFileSync(file === undefined || file === "-" ? 0 : file, "utf8");
-  } catch (e) {
-    throw new CliError("read_failed", `could not read ${file ?? "stdin"}`, { cause: e });
+  } catch (error) {
+    throw new CliError("read_failed", `could not read ${file ?? "stdin"}`, { cause: error });
   }
 }
 
 function parseJson(text: string): unknown {
   try {
     return JSON.parse(text);
-  } catch (e) {
-    const detail = e instanceof SyntaxError ? e.message : "not valid JSON";
-    throw new CliError("invalid_json", detail, { cause: e });
+  } catch (error) {
+    const detail = error instanceof SyntaxError ? error.message : "not valid JSON";
+    throw new CliError("invalid_json", detail, { cause: error });
   }
 }
 
 export function run(argv: readonly string[]): { readonly stdout: string; readonly exitCode: 0 } {
   const args = parseArgs(argv);
-  if (args.help) return { stdout: USAGE, exitCode: 0 };
+  if (args.help) {
+    return { stdout: USAGE, exitCode: 0 };
+  }
 
   const value = parseJson(readInput(args.file));
   const options = { bigint: args.bigint, surrogates: args.surrogates } as const;
 
   try {
-    if (args.hash === undefined) return { stdout: canonicalize(value, options) + "\n", exitCode: 0 };
-    if (args.hash === "quick") return { stdout: quickHash(value, options) + "\n", exitCode: 0 };
-    return { stdout: hashSync(value, { ...options, algorithm: args.hash, encoding: args.encoding }) + "\n", exitCode: 0 };
-  } catch (e) {
-    if (isCanonJsonError(e)) throw new CliError("canonicalize_failed", e.message, { cause: e });
-    throw e;
+    if (args.hash === undefined) {
+      return { stdout: `${canonicalize(value, options)}\n`, exitCode: 0 };
+    }
+    if (args.hash === "quick") {
+      return { stdout: `${quickHash(value, options)}\n`, exitCode: 0 };
+    }
+    return {
+      stdout: `${hashSync(value, { ...options, algorithm: args.hash, encoding: args.encoding })}\n`,
+      exitCode: 0,
+    };
+  } catch (error) {
+    if (isCanonJsonError(error)) {
+      throw new CliError("canonicalize_failed", error.message, { cause: error });
+    }
+    throw error;
   }
 }
 
@@ -141,18 +193,23 @@ export function main(argv: readonly string[]): number {
     const { stdout, exitCode } = run(argv);
     process.stdout.write(stdout);
     return exitCode;
-  } catch (e) {
-    if (!(e instanceof CliError)) throw e;
-    process.stderr.write(`canonjson: ${e.message}\n`);
-    switch (e.code) {
-      case "usage":
+  } catch (error) {
+    if (!(error instanceof CliError)) {
+      throw error;
+    }
+    process.stderr.write(`canonjson: ${error.message}\n`);
+    switch (error.code) {
+      case "usage": {
         process.stderr.write(`\n${USAGE}`);
-        return 64; // EX_USAGE
-      case "read_failed":
-        return 66; // EX_NOINPUT
+        return 64;
+      } // EX_USAGE
+      case "read_failed": {
+        return 66;
+      } // EX_NOINPUT
       case "invalid_json":
-      case "canonicalize_failed":
-        return 65; // EX_DATAERR
+      case "canonicalize_failed": {
+        return 65;
+      } // EX_DATAERR
     }
   }
 }

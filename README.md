@@ -67,11 +67,11 @@ Behaviour matches `JSON.stringify` wherever JCS defers to it: `toJSON()` is hono
 
 Options:
 
-| option   | values                              | default   | notes |
-| -------- | ----------------------------------- | --------- | ----- |
-| `bigint` | `"error"` \| `"number"` \| `"string"` | `"error"` | JCS only defines doubles. `"number"` emits digits as a JSON number; `"string"` emits them quoted. |
-| `maxDepth` | integer ≥ 0 | `1000` | Nesting limit; deeper input throws `depth_exceeded`. Bounds work on hostile payloads (e.g. before signature verification). |
-| `surrogates` | `"error"` \| `"escape"` | `"error"` | RFC 8785 builds on I-JSON (RFC 7493), which requires well-formed Unicode, so unpaired UTF-16 surrogates throw. `"escape"` emits `\udXXX` like `JSON.stringify`. |
+| option       | values                                | default   | notes                                                                                                                                                           |
+| ------------ | ------------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bigint`     | `"error"` \| `"number"` \| `"string"` | `"error"` | JCS only defines doubles. `"number"` emits digits as a JSON number; `"string"` emits them quoted.                                                               |
+| `maxDepth`   | integer ≥ 0                           | `1000`    | Nesting limit; deeper input throws `depth_exceeded`. Bounds work on hostile payloads (e.g. before signature verification).                                      |
+| `surrogates` | `"error"` \| `"escape"`               | `"error"` | RFC 8785 builds on I-JSON (RFC 7493), which requires well-formed Unicode, so unpaired UTF-16 surrogates throw. `"escape"` emits `\udXXX` like `JSON.stringify`. |
 
 ### Errors
 
@@ -89,24 +89,24 @@ try {
 }
 ```
 
-| `code`                  | when |
-| ----------------------- | ---- |
-| `non_finite_number`     | `NaN`, `Infinity`, `-Infinity` |
+| `code`                  | when                                                                              |
+| ----------------------- | --------------------------------------------------------------------------------- |
+| `non_finite_number`     | `NaN`, `Infinity`, `-Infinity`                                                    |
 | `lone_surrogate`        | a string or key with an unpaired UTF-16 surrogate (default `surrogates: "error"`) |
-| `circular_reference`    | an object/array contains itself |
-| `depth_exceeded`        | nesting deeper than `maxDepth` (or the call stack, if raised past ~2000) |
-| `bigint_unsupported`    | a `bigint` with the default `bigint: "error"` |
-| `unserializable_value`  | top-level `undefined`, function or symbol |
-| `webcrypto_unavailable` | `hash()` called where `crypto.subtle` is missing |
+| `circular_reference`    | an object/array contains itself                                                   |
+| `depth_exceeded`        | nesting deeper than `maxDepth` (or the call stack, if raised past ~2000)          |
+| `bigint_unsupported`    | a `bigint` with the default `bigint: "error"`                                     |
+| `unserializable_value`  | top-level `undefined`, function or symbol                                         |
+| `webcrypto_unavailable` | `hash()` called where `crypto.subtle` is missing                                  |
 
 ### `hash(value, options?) → Promise<string>`
 
 `digest(canonicalize(value))` via `crypto.subtle`. Options extend `CanonicalizeOptions` with:
 
-| option      | values                                             | default     |
-| ----------- | -------------------------------------------------- | ----------- |
+| option      | values                                                 | default     |
+| ----------- | ------------------------------------------------------ | ----------- |
 | `algorithm` | `"SHA-1"` \| `"SHA-256"` \| `"SHA-384"` \| `"SHA-512"` | `"SHA-256"` |
-| `encoding`  | `"hex"` \| `"base64"` \| `"base64url"`               | `"hex"`     |
+| `encoding`  | `"hex"` \| `"base64"` \| `"base64url"`                 | `"hex"`     |
 
 ### `hashSync(value, options?) → string` — from `canonjson/node`
 
@@ -120,16 +120,17 @@ Synchronous, non-cryptographic 53-bit hash (cyrb53) of the canonical form, as 14
 
 Canonicalization has to sort keys and validate every string and number, so it costs something over plain serialization — but not much. Against native `JSON.stringify` (unsorted, unchecked) on Node 24 / Apple Silicon, best of 3 rounds (`pnpm build && node bench/bench.mjs`):
 
-| payload | JSON.stringify | canonjson | relative |
-|---|---|---|---|
-| small JWT-style claims | 4.6M ops/s | 1.8M ops/s | 0.39× |
-| flat 50-key object | 924k | 197k | 0.21× |
-| 200 nested records | 29k | 7.7k | 0.26× |
-| long strings (ASCII + CJK/emoji) | 194k | 314k | 1.62× |
-| 2 000-key object | 13k | 4.2k | 0.32× |
-| 900-level nesting | 4.2k | 6.4k | 1.54× |
+| payload                          | JSON.stringify | canonjson  | relative |
+| -------------------------------- | -------------- | ---------- | -------- |
+| small JWT-style claims           | 4.6M ops/s     | 1.8M ops/s | 0.39×    |
+| flat 50-key object               | 924k           | 197k       | 0.21×    |
+| 200 nested records               | 29k            | 7.7k       | 0.26×    |
+| long strings (ASCII + CJK/emoji) | 194k           | 314k       | 1.62×    |
+| 2 000-key object                 | 13k            | 4.2k       | 0.32×    |
+| 900-level nesting                | 4.2k           | 6.4k       | 1.54×    |
 
 Roughly a quarter to a third of native throughput on ordinary payloads (the sort dominates), and occasionally faster where V8's serializer takes a slow path. In practice a signing payload canonicalizes in well under a microsecond; this is never the thing you profile. Strictness — typed errors, surrogate and depth checks — is included in these numbers.
+
 ## Notes
 
 - Only JSON data types are canonical. `Map`, `Set`, `RegExp`, class instances without `toJSON`, etc. serialize the way `JSON.stringify` would (usually `{}`), which is probably not what you want — convert them first.

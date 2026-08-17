@@ -24,10 +24,13 @@ const encoder = new TextEncoder();
 export async function hash(value: unknown, options: HashOptions = {}): Promise<string> {
   const subtle = globalThis.crypto?.subtle;
   if (subtle === undefined) {
-    throw new CanonJsonError("canonjson: WebCrypto (crypto.subtle) is not available in this runtime", {
-      code: "webcrypto_unavailable",
-      path: [],
-    });
+    throw new CanonJsonError(
+      "canonjson: WebCrypto (crypto.subtle) is not available in this runtime",
+      {
+        code: "webcrypto_unavailable",
+        path: [],
+      },
+    );
   }
   const bytes = encoder.encode(canonicalize(value, options));
   const digest = await subtle.digest(options.algorithm ?? "SHA-256", bytes);
@@ -43,18 +46,18 @@ export async function hash(value: unknown, options: HashOptions = {}): Promise<s
  */
 export function quickHash(value: unknown, options: CanonicalizeOptions = {}): string {
   const str = canonicalize(value, options);
-  let h1 = 0xdeadbeef;
-  let h2 = 0x41c6ce57;
+  let h1 = 0xde_ad_be_ef;
+  let h2 = 0x41_c6_ce_57;
   for (let i = 0; i < str.length; i++) {
     const ch = str.charCodeAt(i);
-    h1 = Math.imul(h1 ^ ch, 2654435761);
-    h2 = Math.imul(h2 ^ ch, 1597334677);
+    h1 = Math.imul(h1 ^ ch, 2_654_435_761);
+    h2 = Math.imul(h2 ^ ch, 1_597_334_677);
   }
-  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507);
-  h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
-  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507);
-  h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);
-  const n = 4294967296 * (2097151 & h2) + (h1 >>> 0);
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2_246_822_507);
+  h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3_266_489_909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2_246_822_507);
+  h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3_266_489_909);
+  const n = 4_294_967_296 * (2_097_151 & h2) + (h1 >>> 0);
   return n.toString(16).padStart(14, "0");
 }
 
@@ -65,18 +68,24 @@ export function encodeBytes(bytes: Uint8Array, encoding: HashEncoding): string {
   switch (encoding) {
     case "hex": {
       let s = "";
-      for (const b of bytes) s += HEX[b] ?? "";
+      for (const b of bytes) {
+        s += HEX[b] ?? "";
+      }
       return s;
     }
-    case "base64":
+    case "base64": {
       return toBase64(bytes);
-    case "base64url":
-      return toBase64(bytes).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    }
+    case "base64url": {
+      return toBase64(bytes).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "");
+    }
   }
 }
 
 function toBase64(bytes: Uint8Array): string {
   let bin = "";
-  for (const b of bytes) bin += String.fromCharCode(b);
+  for (const b of bytes) {
+    bin += String.fromCharCode(b);
+  }
   return btoa(bin);
 }

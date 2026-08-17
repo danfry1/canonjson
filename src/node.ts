@@ -18,5 +18,8 @@ const NODE_ALGORITHM = {
 export function hashSync(value: unknown, options: HashOptions = {}): string {
   const algorithm = NODE_ALGORITHM[options.algorithm ?? "SHA-256"];
   const digest = createHash(algorithm).update(canonicalize(value, options), "utf8").digest();
-  return encodeBytes(new Uint8Array(digest.buffer, digest.byteOffset, digest.byteLength), options.encoding ?? "hex");
+  return encodeBytes(
+    new Uint8Array(digest.buffer, digest.byteOffset, digest.byteLength),
+    options.encoding ?? "hex",
+  );
 }

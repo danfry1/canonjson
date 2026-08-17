@@ -1,12 +1,12 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { parseArgs, run } from "../src/cli.js";
 
-const dir = mkdtempSync(join(tmpdir(), "canonjson-"));
+const dir = mkdtempSync(path.join(tmpdir(), "canonjson-"));
 function file(name: string, content: string): string {
-  const p = join(dir, name);
+  const p = path.join(dir, name);
   writeFileSync(p, content);
   return p;
 }
@@ -41,7 +41,10 @@ describe("parseArgs", () => {
   });
 
   it.each([
-    { argv: ["--hash", "md5"], message: "--hash must be one of: sha1, sha256, sha384, sha512, quick" },
+    {
+      argv: ["--hash", "md5"],
+      message: "--hash must be one of: sha1, sha256, sha384, sha512, quick",
+    },
     { argv: ["--encoding", "hex2"], message: "--encoding must be one of: hex, base64, base64url" },
     { argv: ["--bigint"], message: "--bigint must be one of: error, number, string" },
     { argv: ["--surrogates", "yes"], message: "--surrogates must be one of: error, escape" },
@@ -60,7 +63,9 @@ describe("run", () => {
 
   it("prints a sha256 hex digest with --hash", () => {
     const p = file("b.json", '{"b":[true,null],"a":1}');
-    expect(run([p, "--hash"]).stdout).toBe("1cc69c7fa23616ca2ec3ee70d24390a6225c8832db8a4c814c7e0e7f942f8668\n");
+    expect(run([p, "--hash"]).stdout).toBe(
+      "1cc69c7fa23616ca2ec3ee70d24390a6225c8832db8a4c814c7e0e7f942f8668\n",
+    );
   });
 
   it("prints a quick hash with --hash quick", () => {
@@ -78,13 +83,13 @@ describe("run", () => {
   });
 
   it("reports a missing file", () => {
-    expect(() => run([join(dir, "missing.json")])).toThrow(/could not read/);
+    expect(() => run([path.join(dir, "missing.json")])).toThrow(/could not read/);
   });
 
   it("surfaces canonicalization failures", () => {
     const p = file("big.json", "[123456789012345678901234567890]");
     expect(run([p]).stdout).toBe("[1.2345678901234568e+29]\n");
-    const q = file("nan.json", '{"s":"\\ud800"}');
+    const q = file("nan.json", String.raw`{"s":"\ud800"}`);
     expect(() => run([q])).toThrow(/unpaired surrogate/);
     expect(run([q, "--surrogates", "escape"]).stdout).toBe('{"s":"\\ud800"}\n');
   });

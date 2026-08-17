@@ -22,10 +22,10 @@ type CanonJsonErrorContext = {
  * to locate the offending value inside the input.
  */
 export class CanonJsonError extends Error {
-  readonly code: CanonJsonErrorCode;
-  readonly path: ValuePath;
+  public readonly code: CanonJsonErrorCode;
+  public readonly path: ValuePath;
 
-  constructor(message: string, context: CanonJsonErrorContext) {
+  public constructor(message: string, context: CanonJsonErrorContext) {
     super(message, context.cause === undefined ? undefined : { cause: context.cause });
     this.name = new.target.name;
     Object.setPrototypeOf(this, new.target.prototype);
@@ -33,7 +33,12 @@ export class CanonJsonError extends Error {
     this.path = context.path;
   }
 
-  toJSON(): { readonly name: string; readonly code: CanonJsonErrorCode; readonly message: string; readonly path: ValuePath } {
+  public toJSON(): {
+    readonly name: string;
+    readonly code: CanonJsonErrorCode;
+    readonly message: string;
+    readonly path: ValuePath;
+  } {
     return { name: this.name, code: this.code, message: this.message, path: this.path };
   }
 }
@@ -45,6 +50,8 @@ export function isCanonJsonError(e: unknown): e is CanonJsonError {
 /** Human-readable rendering of a {@link ValuePath} for messages, e.g. `$.a[2].b`. */
 export function formatPath(path: ValuePath): string {
   let s = "$";
-  for (const seg of path) s += typeof seg === "number" ? `[${seg}]` : `.${seg}`;
+  for (const seg of path) {
+    s += typeof seg === "number" ? `[${seg}]` : `.${seg}`;
+  }
   return s;
 }

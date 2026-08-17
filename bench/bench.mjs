@@ -2,13 +2,15 @@
 // Measures the built dist against native JSON.stringify (unsorted, no checks) as the floor.
 import { canonicalize } from "../dist/index.js";
 
-const flat = Object.fromEntries(Array.from({ length: 50 }, (_, i) => [`key${i}`, i % 3 ? `value ${i}` : i * 1.5]));
+const flat = Object.fromEntries(
+  Array.from({ length: 50 }, (_, i) => [`key${i}`, i % 3 ? `value ${i}` : i * 1.5]),
+);
 const small = {
   iss: "https://issuer.example",
   sub: "user-123",
   aud: ["a", "b"],
-  exp: 1700000000,
-  iat: 1699990000,
+  exp: 1_700_000_000,
+  iat: 1_699_990_000,
   nonce: "n-0S6_WzA2Mj",
   claims: { email: "u@x.io", verified: true },
 };
@@ -17,13 +19,22 @@ const nested = {
     id: i,
     name: `User ${i}`,
     tags: ["a", "b", "c"],
-    profile: { age: 20 + (i % 40), email: `u${i}@x.io`, active: i % 2 === 0, scores: [1.5, 2.25, 3] },
+    profile: {
+      age: 20 + (i % 40),
+      email: `u${i}@x.io`,
+      active: i % 2 === 0,
+      scores: [1.5, 2.25, 3],
+    },
   })),
 };
 const strings = { text: "lorem ipsum ".repeat(500), unicode: "日本語 \u{1F600} ".repeat(200) };
-const wide = Object.fromEntries(Array.from({ length: 2000 }, (_, i) => [`k${(i * 7919) % 2000}`, i]));
+const wide = Object.fromEntries(
+  Array.from({ length: 2000 }, (_, i) => [`k${(i * 7919) % 2000}`, i]),
+);
 let deep = 1;
-for (let i = 0; i < 900; i++) deep = { d: deep, x: [i] };
+for (let i = 0; i < 900; i++) {
+  deep = { d: deep, x: [i] };
+}
 
 const cases = { small, flat, nested, strings, wide, deep };
 const libs = [
@@ -35,14 +46,20 @@ console.log(`node ${process.version} — best of 3 rounds, ops/s (higher is bett
 console.log("| payload | JSON.stringify | canonjson | relative |");
 console.log("|---|---|---|---|");
 for (const [name, value] of Object.entries(cases)) {
-  if (JSON.parse(canonicalize(value)) === undefined) throw new Error("unreachable"); // sanity: output is valid JSON
-  const iterations = ["nested", "wide", "deep"].includes(name) ? 3000 : 20000;
+  if (JSON.parse(canonicalize(value)) === undefined) {
+    throw new Error("unreachable");
+  } // Sanity: output is valid JSON
+  const iterations = ["nested", "wide", "deep"].includes(name) ? 3000 : 20_000;
   const best = new Map();
   for (let round = 0; round < 3; round++) {
     for (const [lib, fn] of libs) {
-      for (let i = 0; i < iterations / 4; i++) fn(value);
+      for (let i = 0; i < iterations / 4; i++) {
+        fn(value);
+      }
       const start = performance.now();
-      for (let i = 0; i < iterations; i++) fn(value);
+      for (let i = 0; i < iterations; i++) {
+        fn(value);
+      }
       const ops = (iterations / (performance.now() - start)) * 1000;
       best.set(lib, Math.max(best.get(lib) ?? 0, ops));
     }
