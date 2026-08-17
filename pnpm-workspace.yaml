@@ -1,6 +1,0 @@
-packages:
-  - .
-# Default-deny install scripts. esbuild runs fine from its platform binary package;
-# its postinstall is only a sanity check, so it stays denied.
-allowBuilds:
-  esbuild: false

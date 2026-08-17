@@ -1,0 +1,6 @@
+[install]
+# Supply-chain hardening (https://danfry.dev/standards.md): exact pins, frozen
+# lockfile in CI, no lifecycle scripts (bun default-denies; nothing is trusted here),
+# and a 7-day cooldown before a newly published version can be installed.
+exact = true
+minimumReleaseAge = 604800
