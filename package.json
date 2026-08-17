@@ -26,7 +26,7 @@
     "url": "git+https://github.com/danfry1/canonjson.git"
   },
   "bin": {
-    "canonjson": "./bin/canonjson.js"
+    "canonjson": "bin/canonjson.js"
   },
   "files": [
     "dist",
