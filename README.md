@@ -30,13 +30,14 @@ canonicalize({ b: 2, a: 1 }); // '{"a":1,"b":2}'
 ## Install
 
 ```sh
-npm  install canonjson
-pnpm add     canonjson
-yarn add     canonjson
-bun  add     canonjson
+npm install canonjson
+pnpm add canonjson
+yarn add canonjson
+bun add canonjson
+deno add npm:canonjson
 ```
 
-Deno: `import { canonicalize } from "npm:canonjson";`
+Deno can also skip the install step and import `npm:canonjson` directly.
 
 ## Usage
 
