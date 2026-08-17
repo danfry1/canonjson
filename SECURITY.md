@@ -32,6 +32,7 @@ resistance matters.
 
 ## Supply chain
 
-Releases are published from GitHub Actions with npm provenance. Dependencies are
-exact-pinned, lifecycle scripts are disabled, and CI actions are pinned to commit
-SHAs.
+Releases are staged from GitHub Actions with npm provenance via OIDC trusted
+publishing, and become installable only after a maintainer approves them with a
+2FA challenge. Dependencies are exact-pinned, lifecycle scripts are disabled, and
+CI actions are pinned to commit SHAs.
