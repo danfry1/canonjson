@@ -1,5 +1,12 @@
-# Publishes to npm via OIDC trusted publishing with provenance.
-# Publishes under the `next` dist-tag first; promote manually after soaking:
+# Publishes to npm via OIDC trusted publishing, with provenance.
+#
+# Requires a trusted publisher configured at
+# https://www.npmjs.com/package/canonjson/access — repository danfry1/canonjson,
+# workflow release.yml, environment npm. npm cannot do this for a package's very
+# first version, so 0.1.0 was published from a workstation; every later release
+# goes through here.
+#
+# Publishes under the `next` dist-tag; promote after soaking:
 #   npm dist-tag add canonjson@<version> latest
 name: Release
 
@@ -28,6 +35,12 @@ jobs:
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
+      # Trusted publishing needs npm >= 11.5.1; pin rather than trust the bundled version.
+      - run: npm install -g npm@12.0.2
       - run: bun install --frozen-lockfile
       - run: bun run check
+      - name: Verify the package resolves correctly for every consumer
+        run: |
+          npx --yes publint@0.3.23 --strict
+          npx --yes @arethetypeswrong/cli@0.18.5 --pack .
       - run: npm publish --provenance --access public --tag next
