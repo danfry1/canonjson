@@ -1,8 +1,8 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
-import { parseArgs, run } from "../src/cli.js";
+import { describe, expect, it, vi } from "vitest";
+import { main, parseArgs, run } from "../src/cli.js";
 
 const dir = mkdtempSync(path.join(tmpdir(), "canonjson-"));
 function file(name: string, content: string): string {
@@ -92,5 +92,65 @@ describe("run", () => {
     const q = file("nan.json", String.raw`{"s":"\ud800"}`);
     expect(() => run([q])).toThrow(/unpaired surrogate/);
     expect(run([q, "--surrogates", "escape"]).stdout).toBe('{"s":"\\ud800"}\n');
+  });
+});
+
+describe("main", () => {
+  function capture(argv: readonly string[]): { code: number; out: string; err: string } {
+    let out = "";
+    let err = "";
+    const stdout = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
+      out += String(chunk);
+      return true;
+    });
+    const stderr = vi.spyOn(process.stderr, "write").mockImplementation((chunk) => {
+      err += String(chunk);
+      return true;
+    });
+    try {
+      return { code: main(argv), out, err };
+    } finally {
+      stdout.mockRestore();
+      stderr.mockRestore();
+    }
+  }
+
+  it("writes the canonical form to stdout and exits 0", () => {
+    const target = file("main-ok.json", '{"b":1,"a":2}');
+    const result = capture([target]);
+    expect(result.code).toBe(0);
+    expect(result.out).toBe('{"a":2,"b":1}\n');
+    expect(result.err).toBe("");
+  });
+
+  it("exits 64 with usage on an unknown option", () => {
+    const result = capture(["--nope"]);
+    expect(result.code).toBe(64);
+    expect(result.err).toContain("unknown option --nope");
+    expect(result.err).toContain("Usage: canonjson");
+  });
+
+  it("exits 66 when the input file cannot be read", () => {
+    const result = capture([path.join(dir, "does-not-exist.json")]);
+    expect(result.code).toBe(66);
+    expect(result.err).toContain("could not read");
+  });
+
+  it("exits 65 on invalid JSON", () => {
+    const target = file("main-bad.json", "{ nope");
+    expect(capture([target]).code).toBe(65);
+  });
+
+  it("exits 65 when canonicalization fails", () => {
+    const target = file("main-surrogate.json", String.raw`{"s":"\ud800"}`);
+    const result = capture([target]);
+    expect(result.code).toBe(65);
+    expect(result.err).toContain("unpaired surrogate");
+  });
+
+  it("prints usage and exits 0 for --help", () => {
+    const result = capture(["--help"]);
+    expect(result.code).toBe(0);
+    expect(result.out).toMatch(/^Usage: canonjson/);
   });
 });

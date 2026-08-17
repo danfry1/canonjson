@@ -78,15 +78,21 @@
     "test:watch": "vitest",
     "typecheck": "tsc",
     "bench": "bun run build && node bench/bench.mjs",
-    "check": "bun run fmt:check && bun run lint && bun run typecheck && bun run test && bun run build",
+    "check": "bun run fmt:check && bun run lint && bun run typecheck && bun run test:coverage && bun run build",
     "prepublishOnly": "bun run check",
     "lint": "oxlint --type-aware",
     "lint:fix": "oxlint --type-aware --fix",
     "fmt": "oxfmt",
-    "fmt:check": "oxfmt --check"
+    "fmt:check": "oxfmt --check",
+    "test:coverage": "vitest run --coverage",
+    "knip": "knip"
   },
   "devDependencies": {
+    "@fast-check/vitest": "0.4.1",
     "@types/node": "26.2.0",
+    "@vitest/coverage-v8": "4.1.10",
+    "fast-check": "4.9.0",
+    "knip": "6.32.1",
     "npm": "11.15.0",
     "oxfmt": "0.63.0",
     "oxlint": "1.78.0",
