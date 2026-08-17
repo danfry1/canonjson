@@ -58,4 +58,13 @@ jobs:
           bun-version: 1.3.14
       - run: bun install --frozen-lockfile
       - run: bun run build
-      - run: bun --eval 'import("./dist/index.js").then(async (m) => { const h = await m.hash({ b: 1, a: 2 }); if (m.canonicalize({ b: 1, a: 2 }) !== String.raw`{"a":2,"b":1}` || h.length !== 64) process.exit(1); })'
+      - name: Smoke-test the built package on the Bun runtime
+        run: |
+          bun --eval '
+            const { canonicalize, hash } = await import("./dist/index.js");
+            const canonical = canonicalize({ b: 1, a: 2 });
+            const digest = await hash({ b: 1, a: 2 });
+            if (canonical !== String.raw`{"a":2,"b":1}` || digest.length !== 64) {
+              throw new Error(`unexpected output: ${canonical} ${digest}`);
+            }
+          '
