@@ -20,8 +20,7 @@ a file or stdin. The security-relevant guarantees are:
 - **Determinism.** The same input value always produces the same bytes. A
   divergence between this implementation and another RFC 8785 implementation is
   a security bug when the output is signed — please report it.
-- **Bounded work on hostile input.** Nesting is capped by `maxDepth` (default
-  1000) so a deeply nested payload cannot exhaust the stack. Raising `maxDepth`
+- **Bounded work on hostile input.** Nesting is capped by `maxDepth` (default 1000) so a deeply nested payload cannot exhaust the stack. Raising `maxDepth`
   beyond roughly 2000 trades that guarantee for depth.
 - **Rejection of non-interoperable input.** `NaN`, `Infinity`, and unpaired
   surrogates throw rather than producing bytes another implementation would
