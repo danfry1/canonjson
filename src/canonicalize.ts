@@ -198,8 +198,9 @@ function serializeNumber(value: number, ctx: Ctx): string {
   if (!Number.isFinite(value)) {
     throw fail(ctx, "non_finite_number", `${String(value)} is not representable in JSON`);
   }
-  // ES6 Number::toString is exactly what JCS specifies; -0 becomes "0".
-  return value === 0 ? "0" : String(value);
+  // ES6 Number::toString is exactly what JCS specifies, and it already renders
+  // -0 as "0", so no special case is needed.
+  return String(value);
 }
 
 function serializeBigint(value: bigint, ctx: Ctx): string {
