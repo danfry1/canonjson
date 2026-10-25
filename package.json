@@ -1,6 +1,6 @@
 {
   "name": "canonjson",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "RFC 8785 (JCS) canonical JSON serialization and stable hashing of any JS value. Zero dependencies, ~1 KB.",
   "keywords": [
     "cache-key",
